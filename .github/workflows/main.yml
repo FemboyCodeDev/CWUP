@@ -22,7 +22,7 @@ jobs:
           version: latest
           platform: x64
       - name: Create Output Directory
-        run: mkdir -p dis
+        run: mkdir -p dist
       - name: Compile
         run: gcc -Wall -o dist/cwup cwup.c -lX11
       - name: Upload
