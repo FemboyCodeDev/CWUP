@@ -26,7 +26,7 @@ jobs:
       - name: Compile
         run: gcc -Wall -o dist/cwup cwup.c -lX11
       - name: Upload
-        uses: "actions/upload-artifact@v5"
+        uses: "actions/upload-artifact@v4"
         with:
-          name: CWUP-linux-distruvution
+          name: CWUP-linux-distribution
           path: dist/cwup
