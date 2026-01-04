@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 jobs:
   build-linux:
-    name: deploy to staging
+    name: compile for linux
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
@@ -31,10 +31,35 @@ jobs:
           name: CWUP-linux-distribution
           path: dist/cwup
 
+
+  build-windows:
+    name: compile for window
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up MinGW
+        uses: egor-tensin/setup-mingw@v3
+        with:
+          version: latest
+          platform: x64
+          
+      - name: Create Output Directory
+        run: mkdir -p dist
+      - name: Compile
+        run: gcc -Wall -o dist/cwup.exe cwup.c -lX11
+      - name: Upload
+        uses: "actions/upload-artifact@v4"
+        with:
+          name: CWUP-windows-distribution
+          path: dist/cwup
+
           
   release-nightly:
     name: Create GitHub Release
-    needs: build-linux # This makes sure the build finishes first!
+    needs: [build-linux, build-windows] # This makes sure the build finishes first!
+    
     runs-on: ubuntu-latest
     permissions:
       contents: write
