@@ -64,11 +64,17 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Download Binary from Build Job
+      - name: Download Linux Binary from Build Job
         uses: actions/download-artifact@v4
         with:
           name: CWUP-linux-distribution
           path: release-assets
+      - name: Download Windows Binary from Build Job
+        uses: actions/download-artifact@v4
+        with:
+          name: CWUP-windows-distribution
+          path: release-assets
+
 
       - name: Publish Release
         uses: softprops/action-gh-release@v2
@@ -90,10 +96,16 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Download Binary from Build Job
+      - name: Download Linux Binary from Build Job
         uses: actions/download-artifact@v4
         with:
           name: CWUP-linux-distribution
+          path: release-assets
+
+      - name: Download Windows Binary from Build Job
+        uses: actions/download-artifact@v4
+        with:
+          name: CWUP-windows-distribution
           path: release-assets
 
       - name: Publish Release
