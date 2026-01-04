@@ -41,16 +41,16 @@ void xfile_put_pixel(XFile *xf, int x, int y, unsigned long color){
 
 }
 
-int main(int argc, char *argv[]){
 
-	int screen_num, width, height;
-	unsigned long background, border;
-	Window win;
-	XEvent ev;
-	Display *dpy;
-	GC pen;
-	XGCValues values;
 
+int screen_num, width, height;
+unsigned long background, border;
+Window win;
+XEvent ev;
+Display *dpy;
+GC pen;
+XGCValues values;
+int initialise(){
 	//Connect to the server
 
 	dpy = XOpenDisplay(NULL);
@@ -81,16 +81,17 @@ int main(int argc, char *argv[]){
 	XSelectInput(dpy, win, ButtonPressMask|StructureNotifyMask|ExposureMask); // Tell the display server what kind of events we want to see
 
 	XMapWindow(dpy,win); // Diplay the window on the screen please
-	
 
-	XFile *display_file = xfile_open(dpy, win, pen, width, height);
-	
-	for (int i = 0; i< 40; i++){
-		xfile_put_pixel(display_file, i, 20, WhitePixel(dpy, screen_num));
-	}
-	while (1) {
-		XNextEvent(dpy, &ev);
-		switch(ev.type){
+	//XFile *display_file = xfile_open(dpy, win, pen, width, height);
+
+	//for (int i = 0; i< 40; i++){
+	//	xfile_put_pixel(display_file, i, 20, WhitePixel(dpy, screen_num));
+	//}
+	return 0;
+}
+int displayFrame(XFile *display_file){
+	XNextEvent(dpy, &ev);
+	switch(ev.type){
 		case Expose:
 			XCopyArea(dpy, display_file->buffer, win, pen,
 					0, 0, width, height, // Source area
@@ -102,15 +103,32 @@ int main(int argc, char *argv[]){
 			if (width != ev.xconfigure.width || height != ev.xconfigure.height) {
 				width = ev.xconfigure.width;
 				height = ev.xconfigure.height;
-				printf("Size changed to: %d by %d", width, height);
+				//printf("Size changed to: %d by %d", width, height);
 			}
 			break;
-		case ButtonPress:
-			XCloseDisplay(dpy);
-			return 0;
-		}
+		//case ButtonPress:
+			//XCloseDisplay(dpy);
+			//return 0;
+	}
+	return 0;
 	}
 	//return 0;
+
+
+int main(int argc, char *argv[]){
+
+	initialise();
+	XFile *display_file = xfile_open(dpy, win, pen, width, height);
+	for (int i = 0; i < 40; i++){
+		xfile_put_pixel(display_file, i, 20, WhitePixel(dpy, screen_num));
+
+	}
+	while (1){
+		displayFrame(display_file);
+	}
+
+
+	return 0;
 }
 
 
