@@ -22,9 +22,9 @@ jobs:
           version: latest
           platform: x64
       - name: Compile
-        run: gcc -Wall -o output/cwup cwup.c -lX11
-      - name:
+        run: gcc -Wall -o dist/cwup cwup.c -lX11
+      - name: Upload
         uses: "actions/upload-artifact@v5"
         with:
           name: CWUP-linux-distruvution
-          path: output/cwup
+          path: dist/cwup
