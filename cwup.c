@@ -125,7 +125,7 @@ int displayFrame(XFile *display_file){
 	}
 	//return 0;
 
-
+/*
 int main(int argc, char *argv[]){
 
 	initialise();
@@ -148,5 +148,5 @@ int main(int argc, char *argv[]){
 
 	return 0;
 }
-
+*/
 

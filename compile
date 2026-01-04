@@ -1,1 +1,2 @@
- gcc -Wall -o cwup cwup.c -lX11
+gcc -Wall -o cwup main.c -lX11
+gcc -c cwup.c -o cwup.o
