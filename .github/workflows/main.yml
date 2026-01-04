@@ -38,23 +38,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         
-      - name: Set up MSYS2
-        uses: msys2/setup-msys2@v2
+      - name: Set up mingw
+        uses: egor-tensin/setup-mingw@v3
         with:
-          msystem: MINGW64
-          update: true
-          install: >-
-            mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-xorgproto
-            mingw-w64-x86_64-libX11
+          platform: x64
           
       - name: Create Output Directory
-        shell: msys2 {0}
         run: mkdir -p dist
         
       - name: Compile
-        shell: msys2 {0}
-        # We keep your exact command, but run it inside the MSYS2 shell! :3
         run: gcc -Wall -o dist/cwup.exe cwup.c -lX11
         
       - name: Upload
