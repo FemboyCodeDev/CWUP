@@ -5,7 +5,7 @@ on:
     - release/*
   workflow_dispatch:
 jobs:
-  my_job:
+  build-linux:
     name: deploy to staging
     runs-on: ubuntu-22.04
     steps:
@@ -30,3 +30,26 @@ jobs:
         with:
           name: CWUP-linux-distribution
           path: dist/cwup
+
+          
+  release:
+    name: Create GitHub Release
+    needs: build-linux # This makes sure the build finishes first!
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Binary from Build Job
+        uses: actions/download-artifact@v4
+        with:
+          name: compiled-binary
+          path: release-assets
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/cwup
+          name: CWUP Version ${{ github.ref_name }}
+          body: "Automatic build of CWUP for Linux x64."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
