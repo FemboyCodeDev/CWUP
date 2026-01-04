@@ -85,6 +85,35 @@ jobs:
           tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'latest' }}
           name: ${{ github.ref_type == 'tag' && format('CWUP Version {0}', github.ref_name) || 'CWUP Nightly Build' }}
           body: |
+            Automatic build of CWUP
+            Ref: ${{ github.sha }}
+          overwrite_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+  release-nightly-linux:
+    name: Create GitHub Release For Linux
+    needs: build-linux # This makes sure the build finishes first!
+    
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Linux Binary from Build Job
+        uses: actions/download-artifact@v4
+        with:
+          name: CWUP-linux-distribution
+          path: release-assets
+
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-assets/cwup
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'latest' }}
+          name: ${{ github.ref_type == 'tag' && format('CWUP Version {0}', github.ref_name) || 'CWUP Nightly Build' }}
+          body: |
             Automatic build of CWUP for Linux x64.
             Ref: ${{ github.sha }}
           overwrite_files: true
