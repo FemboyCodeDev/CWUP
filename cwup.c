@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 
 typedef struct {
@@ -21,6 +22,7 @@ typedef struct {
 	int height;
 } XFile;
 
+bool xfile_flush = true;
 
 XFile* xfile_open(Display *d, Window w, GC p, int w_width, int w_height) {
 	XFile *xf = malloc(sizeof(XFile));
@@ -30,21 +32,30 @@ XFile* xfile_open(Display *d, Window w, GC p, int w_width, int w_height) {
 
 	int screen = DefaultScreen(d);
 	xf->buffer = XCreatePixmap(d, w, w_width, w_height, DefaultDepth(d, screen));
-	
+
 	XSetForeground(d, p, BlackPixel(d, screen));
 	XFillRectangle(d, xf->buffer, p, 0, 0, w_width, w_height);
 	return xf;
 
 }
 
+void xfile_auto_flush(bool flush){
+	xfile_flush = flush;
+}
+
 void xfile_put_pixel(XFile *xf, int x, int y, unsigned long color){
 	XSetForeground(xf->dpy, xf->pen, color);
 	XDrawPoint(xf->dpy, xf->buffer,xf->pen,x,y);
 
+	//XCopyArea(xf->dpy, xf->buffer, xf->win, xf->pen, x, y, 1, 1, x, y);
+	if (xfile_flush){
 	XCopyArea(xf->dpy, xf->buffer, xf->win, xf->pen, x, y, 1, 1, x, y);
 	XFlush(xf->dpy);
+	}
 
 }
+
+
 
 
 
@@ -55,6 +66,8 @@ XEvent ev;
 Display *dpy;
 GC pen;
 XGCValues values;
+
+
 int initialise(){
 	//Connect to the server
 
