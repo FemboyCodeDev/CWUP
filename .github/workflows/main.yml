@@ -79,7 +79,9 @@ jobs:
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
-          files: release-assets/cwup
+          files: |
+            release-assets/cwup
+            release-assets/cwup.exe
           tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'latest' }}
           name: ${{ github.ref_type == 'tag' && format('CWUP Version {0}', github.ref_name) || 'CWUP Nightly Build' }}
           body: |
@@ -111,7 +113,9 @@ jobs:
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
-          files: release-assets/cwup
+          files: |
+            release-assets/cwup
+            release-assets/cwup.exe
           tag_name: "build-${{ github.run_number }}"
           name: "CWUP Build #${{ github.run_number }}"
           body: "Automatic build from commit ${{ github.sha }}"
