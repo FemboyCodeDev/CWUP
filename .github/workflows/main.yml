@@ -47,7 +47,7 @@ jobs:
         run: mkdir -p dist
         
       - name: Compile
-        run: gcc -Wall -o dist/cwup.exe cwup.c -lX11
+        run: gcc -Wall -o dist/cwup.exe cwup.c -lgdi32
         
       - name: Upload
         uses: "actions/upload-artifact@v4"
