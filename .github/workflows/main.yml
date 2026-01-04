@@ -32,7 +32,7 @@ jobs:
           path: dist/cwup
 
           
-  release:
+  release-nightly:
     name: Create GitHub Release
     needs: build-linux # This makes sure the build finishes first!
     runs-on: ubuntu-latest
@@ -55,5 +55,28 @@ jobs:
             Automatic build of CWUP for Linux x64.
             Ref: ${{ github.sha }}
           overwrite_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-versioned:
+    name: Create Versioned GitHub Release
+    needs: build-linux # This makes sure the build finishes first!
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Binary from Build Job
+        uses: actions/download-artifact@v4
+        with:
+          name: CWUP-linux-distribution
+          path: release-assets
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/cwup
+          tag_name: "build-${{ github.run_number }}"
+          name: "CWUP Build #${{ github.run_number }}"
+          body: "Automatic build from commit ${{ github.sha }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
