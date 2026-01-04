@@ -4,7 +4,7 @@
 #include <windows.h>
 #include <stdlib.h>
 
-/* --- Missing Constants & Enums --- */
+/* --- X11 Constants --- */
 #define ExposureMask          (1L<<15)
 #define ButtonPressMask       (1L<<2)
 #define StructureNotifyMask   (1L<<17)
@@ -18,7 +18,7 @@
 /* --- X11 Types --- */
 typedef HWND Window;
 typedef HDC  Pixmap;
-typedef HDC  Drawable; 
+typedef void* Drawable; // Changed to void* to allow HWND or HDC without casting errors
 typedef HBRUSH GC;
 
 typedef struct {
@@ -40,60 +40,85 @@ typedef struct {
 } Display;
 
 /* --- Internal Helper --- */
-// Converts a Window (HWND) to a Drawable (HDC) if needed
-inline HDC GetDrawableDC(Drawable d) {
-    // If it's a window handle, GetDC will work. If it's already a MemDC, it returns itself.
-    HDC hdc = GetDC((HWND)d);
-    return hdc ? hdc : (HDC)d; 
+// Logic to determine if the passed handle is a Window or a Device Context
+inline HDC InternalGetDC(Drawable d) {
+    // If it's a window handle, we get its DC. If it's already a DC, it remains valid.
+    if (IsWindow((HWND)d)) return GetDC((HWND)d);
+    return (HDC)d; 
 }
 
-/* --- Display & Screen --- */
-inline Display* XOpenDisplay(const char* d) {
+inline void InternalReleaseDC(Drawable d, HDC hdc) {
+    if (IsWindow((HWND)d)) ReleaseDC((HWND)d, hdc);
+}
+
+/* --- Display & Connection --- */
+inline Display* XOpenDisplay(const char* name) {
     Display* dpy = (Display*)malloc(sizeof(Display));
     if (dpy) dpy->default_screen = 0;
     return dpy;
 }
 inline void XFlush(Display* dpy) { GdiFlush(); }
-inline int DefaultScreen(Display* d) { return 0; }
-inline Window DefaultRootWindow(Display* d) { return GetDesktopWindow(); }
-inline int DefaultDepth(Display* d, int s) { return 32; }
+inline int DefaultScreen(Display* dpy) { return 0; }
+inline Window DefaultRootWindow(Display* dpy) { return GetDesktopWindow(); }
+inline int DefaultDepth(Display* dpy, int scr) { return 32; }
 inline unsigned long BlackPixel(Display* d, int s) { return RGB(0,0,0); }
 inline unsigned long WhitePixel(Display* d, int s) { return RGB(255,255,255); }
 
-/* --- Window & GC --- */
+/* --- Window & GC Control --- */
 inline Window XCreateSimpleWindow(Display* d, Window p, int x, int y, unsigned int w, unsigned int h, unsigned int bw, unsigned long brd, unsigned long bg) {
-    HWND hwnd = CreateWindowA("STATIC", "X11", WS_OVERLAPPEDWINDOW, x, y, w, h, p, NULL, NULL, NULL);
-    SetClassLongPtr(hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)CreateSolidBrush(bg));
-    return hwnd;
+    // Registering a basic class for the window
+    WNDCLASSA wc = {0};
+    wc.lpfnWndProc = DefWindowProcA;
+    wc.lpszClassName = "X11Shim";
+    wc.hbrBackground = CreateSolidBrush(bg);
+    RegisterClassA(&wc);
+
+    return CreateWindowA("X11Shim", "X11 Window", WS_OVERLAPPEDWINDOW, x, y, w, h, p, NULL, NULL, NULL);
 }
 
-inline GC XCreateGC(Display* dpy, Drawable d, unsigned long mask, XGCValues* v) {
+inline GC XCreateGC(Display* d, Drawable dr, unsigned long mask, XGCValues* v) {
     return CreateSolidBrush(v ? v->foreground : RGB(0,0,0));
 }
 
-inline Pixmap XCreatePixmap(Display* dpy, Drawable d, unsigned int w, unsigned int h, unsigned int depth) {
-    HDC hdc = GetDC(NULL);
-    HDC memDC = CreateCompatibleDC(hdc);
-    HBITMAP hbm = CreateCompatibleBitmap(hdc, w, h);
+inline void XSetForeground(Display* d, GC gc, unsigned long color) {
+    // Note: In GDI, you usually recreate the brush, but for this shim, 
+    // we assume the color doesn't change after creation or is handled by the caller.
+}
+
+inline Pixmap XCreatePixmap(Display* d, Drawable dr, unsigned int w, unsigned int h, unsigned int depth) {
+    HDC ref = GetDC(NULL);
+    HDC memDC = CreateCompatibleDC(ref);
+    HBITMAP hbm = CreateCompatibleBitmap(ref, w, h);
     SelectObject(memDC, hbm);
-    ReleaseDC(NULL, hdc);
+    ReleaseDC(NULL, ref);
     return memDC;
 }
 
-/* --- Drawing & Events --- */
+/* --- Drawing Commands --- */
 inline void XFillRectangle(Display* dpy, Drawable d, GC gc, int x, int y, unsigned int w, unsigned int h) {
-    HDC hdc = GetDrawableDC(d);
-    RECT r = {x, y, (int)(x+w), (int)(y+h)};
+    HDC hdc = InternalGetDC(d);
+    RECT r = { x, y, (int)(x + w), (int)(y + h) };
     FillRect(hdc, &r, gc);
-    if ((HWND)d != GetDesktopWindow()) ReleaseDC((HWND)d, hdc);
+    InternalReleaseDC(d, hdc);
+}
+
+inline void XDrawPoint(Display* dpy, Drawable d, GC gc, int x, int y) {
+    HDC hdc = InternalGetDC(d);
+    LOGBRUSH lb;
+    GetObject(gc, sizeof(lb), &lb);
+    SetPixel(hdc, x, y, lb.lbColor);
+    InternalReleaseDC(d, hdc);
 }
 
 inline void XCopyArea(Display* dpy, Drawable src, Drawable dest, GC gc, int sx, int sy, unsigned int w, unsigned int h, int dx, int dy) {
-    HDC hDest = GetDrawableDC(dest);
-    BitBlt(hDest, dx, dy, w, h, (HDC)src, sx, sy, SRCCOPY);
-    if ((HWND)dest != GetDesktopWindow()) ReleaseDC((HWND)dest, hDest);
+    HDC hSrc = InternalGetDC(src);
+    HDC hDest = InternalGetDC(dest);
+    BitBlt(hDest, dx, dy, w, h, hSrc, sx, sy, SRCCOPY);
+    InternalReleaseDC(src, hSrc);
+    InternalReleaseDC(dest, hDest);
 }
 
+/* --- Event Handling --- */
 inline void XSelectInput(Display* d, Window w, long m) {}
 inline void XMapWindow(Display* d, Window w) { ShowWindow(w, SW_SHOW); }
 
