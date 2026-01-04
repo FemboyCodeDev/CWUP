@@ -4,6 +4,8 @@ on:
     - main
     - release/*
   workflow_dispatch:
+  schedule:
+  - cron: "30 19 * * *"
 jobs:
   build-linux:
     name: compile for linux
