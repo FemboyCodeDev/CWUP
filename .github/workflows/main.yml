@@ -45,8 +45,7 @@ jobs:
           update: true
           install: >-
             mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-xpm-nox
-            mingw-w64-x86_64-libx11
+            mingw-w64-x86_64-xorg-libraries
           
       - name: Create Output Directory
         shell: msys2 {0}
