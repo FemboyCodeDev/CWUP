@@ -19,13 +19,13 @@
 typedef HWND Window;
 typedef HDC  Pixmap;
 typedef void* Drawable; 
-typedef HBRUSH GC;
 
+// Updated GC to be a struct so it can hold state
 typedef struct {
     unsigned long foreground;
     int line_width;
     int line_style;
-} XGCValues;
+} XGCValues, *GC;
 
 typedef struct {
     int type;
@@ -73,12 +73,22 @@ static inline Window XCreateSimpleWindow(Display* d, Window p, int x, int y, uns
     return CreateWindowA("X11Shim", "X11 Window", WS_OVERLAPPEDWINDOW, x, y, w, h, p, NULL, NULL, NULL);
 }
 
+// Now allocates a GC structure to store state
 static inline GC XCreateGC(Display* d, Drawable dr, unsigned long mask, XGCValues* v) {
-    return CreateSolidBrush(v ? v->foreground : RGB(0,0,0));
+    GC gc = (GC)malloc(sizeof(XGCValues));
+    if (v) {
+        *gc = *v;
+    } else {
+        gc->foreground = RGB(0,0,0);
+        gc->line_width = 1;
+        gc->line_style = LineSolid;
+    }
+    return gc;
 }
 
+// Fixed: XSetForeground now updates the stored color
 static inline void XSetForeground(Display* d, GC gc, unsigned long color) {
-    // Basic shim: colors in GDI brushes are static, but we provide the symbol
+    if (gc) gc->foreground = color;
 }
 
 static inline Pixmap XCreatePixmap(Display* d, Drawable dr, unsigned int w, unsigned int h, unsigned int depth) {
@@ -94,23 +104,21 @@ static inline Pixmap XCreatePixmap(Display* d, Drawable dr, unsigned int w, unsi
 static inline void XFillRectangle(Display* dpy, Drawable d, GC gc, int x, int y, unsigned int w, unsigned int h) {
     HDC hdc = InternalGetDC(d);
     RECT r = { x, y, (int)(x + w), (int)(y + h) };
-    FillRect(hdc, &r, gc);
+    HBRUSH brush = CreateSolidBrush(gc->foreground); // Create brush with current GC color
+    FillRect(hdc, &r, brush);
+    DeleteObject(brush); // Clean up to avoid memory leaks!
     InternalReleaseDC(d, hdc);
 }
 
 static inline void XDrawPoint(Display* dpy, Drawable d, GC gc, int x, int y) {
     HDC hdc = InternalGetDC(d);
-    LOGBRUSH lb;
-    GetObject(gc, sizeof(lb), &lb);
-    SetPixel(hdc, x, y, lb.lbColor);
+    SetPixel(hdc, x, y, gc->foreground); // Use the color stored in our GC
     InternalReleaseDC(d, hdc);
 }
 
 static inline void XDrawLine(Display* d, Drawable dr, GC gc, int x1, int y1, int x2, int y2) {
     HDC hdc = InternalGetDC(dr);
-    LOGBRUSH lb;
-    GetObject(gc, sizeof(lb), &lb);
-    HPEN pen = CreatePen(PS_SOLID, 1, lb.lbColor);
+    HPEN pen = CreatePen(PS_SOLID, gc->line_width, gc->foreground);
     HPEN old = (HPEN)SelectObject(hdc, pen);
     MoveToEx(hdc, x1, y1, NULL);
     LineTo(hdc, x2, y2);
