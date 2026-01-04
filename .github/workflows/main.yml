@@ -7,7 +7,7 @@ on:
 jobs:
   build-linux:
     name: compile for linux
-    runs-on: windows-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -34,7 +34,7 @@ jobs:
 
   build-windows:
     name: compile for window
-    runs-on: ubuntu-22.04
+    runs-on: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
