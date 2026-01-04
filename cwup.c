@@ -1,7 +1,12 @@
-#include <stdio.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xresource.h>
+
+#ifdef _WIN32
+	#include "X11_win32_compat.h"
+#else
+	#include <X11/Xlib.h>
+	#include <X11/Xutil.h>
+	#include <X11/Xresource.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
