@@ -7,6 +7,40 @@
 #include <string.h>
 
 
+typedef struct {
+	Display *dpy;
+	Window win;
+	Pixmap buffer;
+	GC pen;
+	int width;
+	int height;
+} XFile;
+
+
+XFile* xfile_open(Display *d, Window w, GC p, int w_width, int w_height) {
+	XFile *xf = malloc(sizeof(XFile));
+	xf->dpy = d;
+	xf->win = w;
+	xf->pen = p;
+
+	int screen = DefaultScreen(d);
+	xf->buffer = XCreatePixmap(d, w, w_width, w_height, DefaultDepth(d, screen));
+	
+	XSetForeground(d, p, BlackPixel(d, screen));
+	XFillRectangle(d, xf->buffer, p, 0, 0, w_width, w_height);
+	return xf;
+
+}
+
+void xfile_put_pixel(XFile *xf, int x, int y, unsigned long color){
+	XSetForeground(xf->dpy, xf->pen, color);
+	XDrawPoint(xf->dpy, xf->buffer,xf->pen,x,y);
+
+	XCopyArea(xf->dpy, xf->buffer, xf->win, xf->pen, x, y, 1, 1, x, y);
+	XFlush(xf->dpy);
+
+}
+
 int main(int argc, char *argv[]){
 
 	int screen_num, width, height;
@@ -47,13 +81,22 @@ int main(int argc, char *argv[]){
 	XSelectInput(dpy, win, ButtonPressMask|StructureNotifyMask|ExposureMask); // Tell the display server what kind of events we want to see
 
 	XMapWindow(dpy,win); // Diplay the window on the screen please
+	
 
+	XFile *display_file = xfile_open(dpy, win, pen, width, height);
+	
+	for (int i = 0; i< 40; i++){
+		xfile_put_pixel(display_file, i, 20, WhitePixel(dpy, screen_num));
+	}
 	while (1) {
 		XNextEvent(dpy, &ev);
 		switch(ev.type){
 		case Expose:
-			XDrawLine(dpy, win, pen, 0, 0, width, height);
-			XDrawLine(dpy, win, pen, width, 0, 0, height);
+			XCopyArea(dpy, display_file->buffer, win, pen,
+					0, 0, width, height, // Source area
+					0, 0); // Destination Coordinates
+			//XDrawLine(dpy, win, pen, 0, 0, width, height);
+			//XDrawLine(dpy, win, pen, width, 0, 0, height);
 			break;
 		case ConfigureNotify:
 			if (width != ev.xconfigure.width || height != ev.xconfigure.height) {
