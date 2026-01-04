@@ -32,26 +32,35 @@ jobs:
 
 
   build-windows:
-    name: compile for window
+    name: compile for windows
     runs-on: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         
-      - name: Set up MinGW
-        uses: egor-tensin/setup-mingw@v3
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
         with:
-          platform: x64
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-libX11
           
       - name: Create Output Directory
+        shell: msys2 {0}
         run: mkdir -p dist
+        
       - name: Compile
+        shell: msys2 {0}
+        # We keep your exact command, but run it inside the MSYS2 shell! :3
         run: gcc -Wall -o dist/cwup.exe cwup.c -lX11
+        
       - name: Upload
         uses: "actions/upload-artifact@v4"
         with:
           name: CWUP-windows-distribution
-          path: dist/cwup
+          path: dist/cwup.exe
 
           
   release-nightly:
