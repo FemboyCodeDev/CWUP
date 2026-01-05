@@ -1,144 +1,65 @@
 on:
   push:
     branches:
-    - main
-    - release/*
+      - main
+      - 'release/*'
+    tags:
+      - 'v*' # Trigger on version tags like v1.0.0
   workflow_dispatch:
   schedule:
-  - cron: "30 19 * * *"
+    - cron: "30 19 * * *"
+
 jobs:
   build-linux:
     name: compile for linux
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Install X11 dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libx11-dev
-          
-      - name: Set up GCC
-        uses: egor-tensin/setup-gcc@v2
+      - uses: egor-tensin/setup-gcc@v2
         with:
           platform: x64
-      - name: Create Output Directory
-        run: mkdir -p dist
-      - name: Compile
-        run: gcc -Wall -o dist/cwup main.c -lX11
-      - name: Upload
-        uses: "actions/upload-artifact@v4"
+      - run: |
+          mkdir -p dist
+          gcc -Wall -o dist/cwup main.c -lX11
+          gcc -fPIC -c cwup.c -o dist/cwup-linux.o
+      - uses: actions/upload-artifact@v4
         with:
-          name: CWUP-linux-distribution
-          path: dist/cwup
-
-  build-object-linux:
-    name: compile for linux (cwup.o)
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Install X11 dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libx11-dev
-          
-      - name: Set up GCC
-        uses: egor-tensin/setup-gcc@v2
-        with:
-          platform: x64
-      - name: Create Output Directory
-        run: mkdir -p dist
-      - name: Compile
-        run: gcc -fPIC -c cwup.c -o dist/cwup-linux.o
-      - name: Upload
-        uses: "actions/upload-artifact@v4"
-        with:
-          name: CWUP-object-linux-distribution
-          path: dist/cwup-linux.o
-
-
-  build-object-windows:
-    name: compile object for windows
-    runs-on: windows-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: Set up mingw
-        uses: egor-tensin/setup-mingw@v3
-        with:
-          platform: x64
-          
-      - name: Create Output Directory
-        run: mkdir -p dist
-        
-      - name: Compile
-        run: gcc -fPIC -c cwup.c -o dist/cwup-windows.o
-        
-      - name: Upload
-        uses: "actions/upload-artifact@v4"
-        with:
-          name: CWUP-object-windows-distribution
-          path: dist/cwup-windows.o
+          name: linux-assets
+          path: dist/*
 
   build-windows:
-      name: compile for windows
-      runs-on: windows-latest
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
-          
-        - name: Set up mingw
-          uses: egor-tensin/setup-mingw@v3
-          with:
-            platform: x64
-            
-        - name: Create Output Directory
-          run: mkdir -p dist
-          
-        - name: Compile
-          run: gcc -Wall -o dist/cwup.exe main.c -lgdi32
-          
-        - name: Upload
-          uses: "actions/upload-artifact@v4"
-          with:
-            name: CWUP-windows-distribution
-            path: dist/cwup.exe
+    name: compile for windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: egor-tensin/setup-mingw@v3
+        with:
+          platform: x64
+      - run: |
+          mkdir dist
+          gcc -Wall -o dist/cwup.exe main.c -lgdi32
+          gcc -fPIC -c cwup.c -o dist/cwup-windows.o
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-assets
+          path: dist/*
 
-          
-  release-nightly:
-    name: Create GitHub Release
-    needs: [build-linux, build-windows,build-object-linux,build-object-windows] # This makes sure the build finishes first!
-    
+  release:
+    name: Create Release
+    needs: [build-linux, build-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Download Linux Binary from Build Job
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          name: CWUP-linux-distribution
           path: release-assets
-          
-      - name: Download Linux Object from Build Job
-        uses: actions/download-artifact@v4
-        with:
-          name: CWUP-object-linux-distribution
-          path: release-assets
-          
-      - name: Download Windows Binary from Build Job
-        uses: actions/download-artifact@v4
-        with:
-          name: CWUP-windows-distribution
-          path: release-assets
-      - name: Download Windows Object from Build Job
-        uses: actions/download-artifact@v4
-        with:
-          name: CWUP-object-windows-distribution
-          path: release-assets
-        
-
+          merge-multiple: true
 
       - name: Publish Release
         uses: softprops/action-gh-release@v2
@@ -148,113 +69,15 @@ jobs:
             release-assets/cwup.exe
             release-assets/cwup-linux.o
             release-assets/cwup-windows.o
+          # If triggered by a tag, use the tag name. Otherwise, use 'latest'.
           tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'latest' }}
           name: ${{ github.ref_type == 'tag' && format('CWUP Version {0}', github.ref_name) || 'CWUP Nightly Build' }}
           body: |
             Automatic build of CWUP
             Ref: ${{ github.sha }}
-          overwrite_files: true
+          # 'latest' is marked as a prerelease; tagged versions are full releases
+          prerelease: ${{ github.ref_type != 'tag' }}
+          # This ensures the 'latest' release is updated every night/push
+          make_latest: ${{ github.ref_type == 'tag' && 'true' || 'false' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-  release-nightly-linux:
-    name: Create GitHub Release For Linux
-    needs:  [build-linux, build-object-linux] # This makes sure the build finishes first!
-    
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Download Linux Binary from Build Job
-        uses: actions/download-artifact@v4
-        with:
-          name: CWUP-linux-distribution
-          path: release-assets
-      - name: Download Linux Object from Build Job
-        uses: actions/download-artifact@v4
-        with:
-          name: CWUP-object-linux-distribution
-          path: release-assets
-
-      - name: Publish Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            release-assets/cwup
-            release-assets/cwup-linux.o
-          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'latest-linux' }}
-          name: ${{ github.ref_type == 'tag' && format('CWUP Version {0}', github.ref_name) || 'CWUP Nightly Build' }}
-          body: |
-            Automatic build of CWUP for Linux x64.
-            Ref: ${{ github.sha }}
-          overwrite_files: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-#  release-versioned:
-#    name: Create Versioned GitHub Release
-#    needs: [build-linux, build-windows] # This makes sure the build finishes first!
-#    runs-on: ubuntu-latest
-#    permissions:
-#      contents: write
-#    steps:
-#      - name: Download Linux Binary from Build Job
- #       uses: actions/download-artifact@v4
-#        with:
-#          name: CWUP-linux-distribution
-#          path: release-assets#
-#
-#      - name: Download Windows Binary from Build Job
-#        uses: actions/download-artifact@v4
-#        with:
-#          name: CWUP-windows-distribution
-#          path: release-assets
-#
-#      - name: Publish Release
-#        with:
-#         files: |
-#            release-assets/cwup
-#            release-assets/cwup.exe
-#          tag_name: "build-${{ github.run_number }}"
-#          name: "CWUP Build #${{ github.run_number }}"
-#          body: "Automatic build from commit ${{ github.sha }}"
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  release-objects-nightly:
-      name: Publish The CWUP objects
-      needs: [build-object-linux,build-object-windows] # This makes sure the build finishes first!
-      
-      runs-on: ubuntu-latest
-      permissions:
-        contents: write
-      steps:
-            
-        - name: Download Linux Object from Build Job
-          uses: actions/download-artifact@v4
-          with:
-            name: CWUP-object-linux-distribution
-            path: release-assets
-            
-        - name: Download Windows Object from Build Job
-          uses: actions/download-artifact@v4
-          with:
-            name: CWUP-object-windows-distribution
-            path: release-assets
-          
-  
-  
-        - name: Publish Release
-          uses: softprops/action-gh-release@v2
-          with:
-            files: |
-              release-assets/cwup-linux.o
-              release-assets/cwup-windows.o
-            tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'latest-objects' }}
-            name: ${{ github.ref_type == 'tag' && format('CWUP Version {0}', github.ref_name) || 'CWUP Nightly Build (Objects)' }}
-            body: |
-              Automatic build of CWUP
-              Ref: ${{ github.sha }}
-            overwrite_files: true
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
