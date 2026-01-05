@@ -25,7 +25,7 @@ jobs:
       - name: Create Output Directory
         run: mkdir -p dist
       - name: Compile
-        run: gcc -Wall -o dist/cwup cwup.c -lX11
+        run: gcc -Wall -o dist/cwup main.c -lX11
       - name: Upload
         uses: "actions/upload-artifact@v4"
         with:
@@ -74,7 +74,7 @@ jobs:
         run: mkdir -p dist
         
       - name: Compile
-        run: gcc -fPIC -c cwup.c -o dist/cwup-windows.o
+        run: gcc -fPIC -c main.c -o dist/cwup-windows.o
         
       - name: Upload
         uses: "actions/upload-artifact@v4"
