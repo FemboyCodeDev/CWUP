@@ -19,8 +19,9 @@ int main(int argc, char *argv[]){
 			vec2 a = {0.1,0.1};
 			vec2 b = {0.1,0.5};
 			vec2 c = {0.5,0.5};
-			bool in_tri = triangle2d(a,b,c,p);
-			if (in_tri){
+			vec2 d = {0.5, 0.1};
+			bool in_quad = quad2d(a,b,c,d,p);
+			if (in_quad){
                         	xfile_put_pixel(display_file, x, y, _RGB((int)(u*255),(int)(v*255),0));
         		}
 	}
