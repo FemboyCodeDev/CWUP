@@ -55,6 +55,25 @@ vec2 project_3d(vec3 point, camera Cam){
 
 
 bool triangle2d(vec2 a, vec2 b, vec2 c, vec2 p){
+	vec2 min = {a.x,a.y};
+	if (b.x < min.x){min.x = b.x;}
+	if (c.x < min.x){min.x = c.x;}
+	if (b.y < min.y){min.y = b.y;}
+	if (c.y < min.y){min.y = c.y;}
+
+	if (!(p.x > min.x && p.y > min.y)){return false;}
+	
+	vec2 max = {a.x,a.y};
+	if (b.x > max.x){max.x = b.x;}
+        if (c.x > max.x){max.x = c.x;}
+        if (b.y > max.y){max.y = b.y;}
+        if (c.y > max.y){max.y = c.y;}
+
+        if (!(p.x < max.x && p.y < max.y)){return false;}
+
+	//return true;
+
+
 	float v1 = ((b.x-a.x)*(p.y-a.y)) - ((b.y-a.y)*(p.x-a.x)); // A and B
 	float v2 = ((c.x-b.x)*(p.y-b.y)) - ((c.y-b.y)*(p.x-b.x)); // B and C
 	float v3 = ((a.x-c.x)*(p.y-c.y)) - ((a.y-c.y)*(p.x-c.x)); // C and A

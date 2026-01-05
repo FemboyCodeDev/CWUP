@@ -26,7 +26,7 @@ int main(int argc, char *argv[]){
 	Cam.sensorDistance = 1.0;
 	Cam.transform.position.z = 8;
         initialise();
-	//xfile_auto_flush(false);
+	xfile_auto_flush(false);
         XFile *display_file = xfile_open(dpy, win, pen, width, height);
         for (int i = 0; i < 40; i++){
                 xfile_put_pixel(display_file, i, 20, WhitePixel(dpy, screen_num));		
