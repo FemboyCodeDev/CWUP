@@ -22,14 +22,19 @@ jobs:
       - uses: egor-tensin/setup-gcc@v2
         with:
           platform: x64
-      - run: |
+      - name: Compile Binary and Object
+        run: |
           mkdir -p dist
-          gcc -Wall -o dist/cwup main.c -lX11
+          # Compile the main executable using BOTH files
+          gcc -Wall -o dist/cwup main.c cwup.c -lX11
+          # Compile just the object file
           gcc -fPIC -c cwup.c -o dist/cwup-linux.o
       - uses: actions/upload-artifact@v4
         with:
           name: linux-assets
-          path: dist/*
+          path: |
+            dist/cwup
+            dist/cwup-linux.o
 
   build-windows:
     name: compile for windows
@@ -39,15 +44,19 @@ jobs:
       - uses: egor-tensin/setup-mingw@v3
         with:
           platform: x64
-      - run: |
+      - name: Compile Binary and Object
+        run: |
           mkdir dist
-          gcc -Wall -o dist/cwup.exe main.c -lgdi32
+          # Compile the Windows exe using BOTH files
+          gcc -Wall -o dist/cwup.exe main.c cwup.c -lgdi32
+          # Compile just the object file
           gcc -fPIC -c cwup.c -o dist/cwup-windows.o
       - uses: actions/upload-artifact@v4
         with:
           name: windows-assets
-          path: dist/*
-
+          path: |
+            dist/cwup.exe
+            dist/cwup-windows.o
   release:
     name: Create Release
     needs: [build-linux, build-windows]
