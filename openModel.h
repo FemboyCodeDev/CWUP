@@ -5,6 +5,48 @@
 #include <stdbool.h>
 
 
+
+//#ifndef _SSIZE_T_DEFINED
+//typedef intptr_t ssize_t;
+//#define _SSIZE_T_DEFINED
+//#endif
+#ifdef _WIN32
+ssize_t getline(char **lineptr, size_t *n, FILE *stream) {
+    size_t pos;
+    int c;
+
+    if (lineptr == NULL || stream == NULL || n == NULL) {
+        return -1;
+    }
+
+    if (*lineptr == NULL) {
+        *n = 128;
+        if ((*lineptr = malloc(*n)) == NULL) return -1;
+    }
+
+    pos = 0;
+    while ((c = fgetc(stream)) != EOF) {
+        if (pos + 1 >= *n) {
+            size_t new_len = *n + (*n >> 2) + 128;
+            char *new_ptr = realloc(*lineptr, new_len);
+            if (new_ptr == NULL) return -1;
+            *lineptr = new_ptr;
+            *n = new_len;
+        }
+        (*lineptr)[pos++] = c;
+        if (c == '\n') break;
+    }
+
+    if (c == EOF && pos == 0) return -1;
+
+    (*lineptr)[pos] = '\0';
+    return (ssize_t)pos;
+}
+#endif
+
+
+
+
 typedef struct {
 	float x;
 	float y;
