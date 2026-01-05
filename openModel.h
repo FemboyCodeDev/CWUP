@@ -84,6 +84,24 @@ typedef struct {
 } openModel;
 
 
+int openModel_parse_triangle(char *input, float *output) {
+	char *token;
+	int count = 0;
+	// Get the first token (the shape type)
+	token = strtok(input, "; ");
+
+	// Check if it's a "tri"
+	if (token == NULL || strcmp(token, "tri") != 0) {
+        return -1; 
+	}
+	// Continue parsing the rest of the numbers
+	// Delimiters include semicolon, comma, and space
+	while ((token = strtok(NULL, ";, ")) != NULL) {
+		output[count++] = atof(token);
+	}
+	return count;
+}
+
 
 openModel loadModel(char filename[]){
 	FILE * fp;
@@ -141,20 +159,4 @@ openModel loadModel(char filename[]){
 
 
 
-int openModel_parse_triangle(char *input, float *output) {
-	char *token;
-	int count = 0;
-	// Get the first token (the shape type)
-	token = strtok(input, "; ");
 
-	// Check if it's a "tri"
-	if (token == NULL || strcmp(token, "tri") != 0) {
-        return -1; 
-	}
-	// Continue parsing the rest of the numbers
-	// Delimiters include semicolon, comma, and space
-	while ((token = strtok(NULL, ";, ")) != NULL) {
-		output[count++] = atof(token);
-	}
-	return count;
-}
