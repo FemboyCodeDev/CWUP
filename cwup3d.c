@@ -51,7 +51,17 @@ vec2 project_3d(vec3 point, camera Cam){
 
 
 
-bool triangle2d(vec2 p1, vec2 p2, vec2 p3){
-	
+bool triangle2d(vec2 a, vec2 b, vec2 c, vec2 p){
+	float v1 = ((b.x-a.x)*(p.y-a.y)) - ((b.y-a.y)*(p.x-a.x)); // A and B
+	float v2 = ((c.x-b.x)*(p.y-b.y)) - ((c.y-b.y)*(p.x-b.x)); // B and C
+	float v3 = ((a.x-c.x)*(p.y-c.y)) - ((a.y-c.y)*(p.x-c.x)); // C and A
+	if (v1 > 0 && v2 > 0 && v3 > 0){
+	return true;
+	}
+	if (v1 < 0 && v2 < 0 && v3 < 0){
+	return true;
+	}
+	return false;
+
 
 }
