@@ -11,8 +11,8 @@
 // TODO: Add filled triangle renderer - Done
 // TODO: Add filled quad renderer - Done
 
-// TODO: Add texture tools
-// TODO: Add texture mapping tools
+// TODO: Add texture tools - Done in a different module
+// TODO: Add texture mapping tools - Done
 // TODO: Add textured quad renderer
 
 
@@ -92,4 +92,23 @@ bool quad2d(vec2 a, vec2 b, vec2 c, vec2 d, vec2 p){
 	bool tri2 = triangle2d(quad[0], quad[2], quad[3], p);
 	return tri1 || tri2;
 
+}
+
+
+// Function to map a point from triangle (A1, B1, C1) to triangle (A2, B2, C2)
+vec2 distort_point(vec2 P, vec2 A1, vec2 B1, vec2 C1, vec2 A2, vec2 B2, vec2 C2) {
+    // Calculate the denominator for barycentric coordinates
+    double det = (B1.y - C1.y) * (A1.x - C1.x) + (C1.x - B1.x) * (A1.y - C1.y);
+
+    // Calculate Barycentric Weights (wA, wB, wC) for the point in the first triangle
+    double wA = ((B1.y - C1.y) * (P.x - C1.x) + (C1.x - B1.x) * (P.y - C1.y)) / det;
+    double wB = ((C1.y - A1.y) * (P.x - C1.x) + (A1.x - C1.x) * (P.y - C1.y)) / det;
+    double wC = 1.0 - wA - wB;
+
+    // Apply those weights to the second triangle's vertices
+    vec2 P_new;
+    P_new.x = wA * A2.x + wB * B2.x + wC * C2.x;
+    P_new.y = wA * A2.y + wB * B2.y + wC * C2.y;
+
+    return P_new;
 }
