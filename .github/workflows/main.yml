@@ -43,7 +43,9 @@ jobs:
           platform: x64
       - run: |
           mkdir dist
-          gcc -Wall -o dist/cwup.exe main.c -lgdi32
+      - run: |
+          gcc -Wall -o dist/cwup.exe main.c -lgdi32 -lm
+      - run: |
           gcc -fPIC -c cwup.c -o dist/cwup-windows.o
       - uses: actions/upload-artifact@v4
         with:
