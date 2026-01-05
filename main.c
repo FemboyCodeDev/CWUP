@@ -26,7 +26,7 @@ int main(int argc, char *argv[]){
 	Cam.sensorDistance = 1.0;
 	Cam.transform.position.z = 8;
         initialise();
-	xfile_auto_flush(false);
+	//xfile_auto_flush(false);
         XFile *display_file = xfile_open(dpy, win, pen, width, height);
         for (int i = 0; i < 40; i++){
                 xfile_put_pixel(display_file, i, 20, WhitePixel(dpy, screen_num));		
@@ -36,7 +36,26 @@ int main(int argc, char *argv[]){
 	//if (model.triCount > 500){
 	//	model.triCount = 500;
 	//}
-	printf("dsfsdfsd");
+
+
+	vec2 a2d[model.triCount];
+	vec2 b2d[model.triCount];
+	vec2 c2d[model.triCount];
+
+	for (int i = 0; i< model.triCount; i++){
+		Tri3 current_tri = model.triangles[i];
+                vec3 a3d = {current_tri.a.x,current_tri.a.y,current_tri.a.z};
+              	vec3 b3d = {current_tri.b.x,current_tri.b.y,current_tri.b.z};
+		vec3 c3d = {current_tri.c.x,current_tri.c.y,current_tri.c.z};
+		vec2 a = project_3d(a3d,Cam);
+		vec2 b = project_3d(b3d,Cam);
+		vec2 c = project_3d(c3d,Cam);
+		a2d[i] = a;
+		b2d[i] = b;
+		c2d[i] = c;
+	}
+
+
         for (int x = 0; x < 512; x++){
 		printf("%d\n",x);
                 for (int y = 0; y < 512;y++){
@@ -49,9 +68,12 @@ int main(int argc, char *argv[]){
 				vec3 a3d = {current_tri.a.x,current_tri.a.y,current_tri.a.z};
 				vec3 b3d = {current_tri.b.x,current_tri.b.y,current_tri.b.z};
 				vec3 c3d = {current_tri.c.x,current_tri.c.y,current_tri.c.z};
-				vec2 a = project_3d(a3d,Cam);
-				vec2 b = project_3d(b3d,Cam);
-				vec2 c = project_3d(c3d,Cam);
+				//vec2 a = project_3d(a3d,Cam);
+				//vec2 b = project_3d(b3d,Cam);
+				//vec2 c = project_3d(c3d,Cam);
+				vec2 a = a2d[i];
+				vec2 b = b2d[i];
+				vec2 c = c2d[i];
 				a.x += 0.5;
 				b.x += 0.5;
 				c.x += 0.5;
