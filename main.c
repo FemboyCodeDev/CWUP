@@ -1,5 +1,5 @@
 #include "cwup.c"
-
+#include "cwup3d.c"
 
 int main(int argc, char *argv[]){
 
